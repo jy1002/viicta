@@ -39,11 +39,22 @@
 <body class="bg-gray-50 min-h-screen p-4 text-gray-800">
 
     <div class="max-w-4xl mx-auto relative">
-        <!-- 오디오 제어 버튼 -->
-        <button id="alarmToggle" onclick="toggleAlarm()"
-            class="absolute top-4 right-4 text-2xl p-2 rounded-full hover:bg-gray-200 transition-colors z-10">🔊</button>
+        <!-- 오디오 제어 영역 -->
+        <div class="absolute top-4 right-4 flex flex-col items-end gap-2 z-10">
+            <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-200">
+                <button id="alarmToggle" onclick="toggleAlarm()"
+                    class="text-xl hover:scale-110 transition-transform">🔊</button>
+                <input type="range" id="volumeControl" min="0" max="0.5" step="0.05"
+                    class="w-16 accent-lime-500 cursor-pointer" oninput="changeVolume(this.value)" title="음량 조절">
+            </div>
+            <select id="alarmSelect" onchange="changeAlarm(this.value)"
+                class="bg-white px-2 py-1 rounded-md shadow-sm border border-gray-200 text-sm text-gray-700 focus:outline-lime-500 cursor-pointer">
+                <option value="alarm1.mp3">가야대</option>
+                <option value="alarm2.mp3">이쪽이야</option>
+            </select>
+        </div>
 
-        <audio id="alarmSound" src="alarm.mp3" preload="auto"></audio>
+        <audio id="alarmSound" src="alarm1.mp3" preload="auto"></audio>
 
         <!-- 타이틀 섹션: 연두색 그라데이션 적용 -->
         <div class="text-center mb-8 pt-4">
@@ -117,6 +128,20 @@
         // 초기 아이콘 설정
         alarmToggleBtn.innerText = isAlarmEnabled ? '🔊' : '🔇';
 
+        // 음량 상태 관리
+        let savedVolume = localStorage.getItem('alarmVolume');
+        let alarmVolume = savedVolume !== null ? Math.min(0.5, parseFloat(savedVolume)) : 0.5;
+        const volumeControl = document.getElementById('volumeControl');
+
+        alarmSound.volume = alarmVolume;
+        volumeControl.value = isAlarmEnabled ? alarmVolume : 0;
+
+        // 알람 소리 파일 상태 관리
+        let savedAlarmFile = localStorage.getItem('alarmSoundFile') || 'alarm1.mp3';
+        const alarmSelect = document.getElementById('alarmSelect');
+
+        alarmSound.src = savedAlarmFile;
+        alarmSelect.value = savedAlarmFile;
 
         // 초기 기본 데이터 설정
         const defaultTasks = [
@@ -235,6 +260,24 @@
             isAlarmEnabled = !isAlarmEnabled;
             alarmToggleBtn.innerText = isAlarmEnabled ? '🔊' : '🔇';
             localStorage.setItem('isAlarmEnabled', JSON.stringify(isAlarmEnabled));
+
+            // 음소거 상태에 따라 음량 바 UI 업데이트
+            if (isAlarmEnabled) {
+                volumeControl.value = alarmVolume;
+            } else {
+                volumeControl.value = 0;
+            }
+        }
+
+        function changeVolume(value) {
+            alarmVolume = parseFloat(value);
+            alarmSound.volume = alarmVolume;
+            localStorage.setItem('alarmVolume', alarmVolume);
+        }
+
+        function changeAlarm(filename) {
+            alarmSound.src = filename;
+            localStorage.setItem('alarmSoundFile', filename);
         }
 
         function startGroup(status) {
