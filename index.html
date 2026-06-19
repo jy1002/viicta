@@ -1,372 +1,325 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>가지무침 체크리스트 도우미</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap" rel="stylesheet">
+    <title>ID 중복 확인 및 관리</title>
     <style>
         body {
-            font-family: 'sans-serif';
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h2, h3 {
+            color: #444;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 8px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .btn-primary:hover { background-color: #45a049; }
+        
+        .btn-action {
+            background-color: #008CBA;
+            color: white;
+            width: 100%;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        .btn-action:hover { background-color: #007bc4; }
+
+        .btn-danger {
+            background-color: #f44336;
+            color: white;
+            padding: 8px 15px;
+            font-size: 13px;
+        }
+        .btn-danger:hover { background-color: #da190b; }
+
+        .id-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            min-height: 40px;
+            padding: 10px;
+            background: #fff;
+            border: 1px dashed #ccc;
+            border-radius: 6px;
+        }
+        
+        .id-btn {
+            padding: 8px 14px;
+            border: 1px solid transparent;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .id-btn.duplicate {
+            background-color: #ffebee;
+            color: #c62828;
+            border-color: #ef9a9a;
+        }
+        .id-btn.unique {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border-color: #a5d6a7;
+        }
+        .id-btn:active {
+            transform: scale(0.95);
         }
 
-        .title-font {
-            font-family: 'Do Hyeon', sans-serif;
+        .set-list {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            max-height: 300px;
+            overflow-y: auto;
         }
-
-        .expired {
-            background-color: #fee2e2 !important;
-            border: 2px solid #ef4444;
-            animation: pulse 2s infinite;
+        .set-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
+        .set-item:last-child { border-bottom: none; }
+        .set-date {
+            font-size: 11px;
+            color: #888;
+        }
+        .set-elements {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .set-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .set-badge.dup { background-color: #ffebee; color: #c62828; }
+        .set-badge.uni { background-color: #e8f5e9; color: #2e7d32; }
 
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.7;
-            }
+        .header-space {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* 알림 메시지 스타일 */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
         }
     </style>
 </head>
+<body>
 
-<body class="bg-gray-50 min-h-screen p-4 text-gray-800">
-
-    <div class="max-w-4xl mx-auto relative">
-        <!-- 오디오 제어 영역 -->
-        <div class="absolute top-4 right-4 flex flex-col items-end gap-2 z-10">
-            <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-200">
-                <button id="alarmToggle" onclick="toggleAlarm()"
-                    class="text-xl hover:scale-110 transition-transform">🔊</button>
-                <input type="range" id="volumeControl" min="0" max="0.5" step="0.05"
-                    class="w-16 accent-lime-500 cursor-pointer" oninput="changeVolume(this.value)" title="음량 조절">
-            </div>
-            <select id="alarmSelect" onchange="changeAlarm(this.value)"
-                class="bg-white px-2 py-1 rounded-md shadow-sm border border-gray-200 text-sm text-gray-700 focus:outline-lime-500 cursor-pointer">
-                <option value="alarm1.mp3">가야대</option>
-                <option value="alarm2.mp3">이쪽이야</option>
-            </select>
-        </div>
-
-        <audio id="alarmSound" src="alarm1.mp3" preload="auto"></audio>
-
-        <!-- 타이틀 섹션: 연두색 그라데이션 적용 -->
-        <div class="text-center mb-8 pt-4">
-            <div class="inline-block relative">
-                <h1 class="text-4xl md:text-5xl font-bold tracking-tight px-4 py-2 italic title-font" style="background: linear-gradient(135deg, #84cc16 0%, #4d7c0f 100%);
-                           -webkit-background-clip: text;
-                           -webkit-text-fill-color: transparent;
-                           filter: drop-shadow(2px 3px 4px rgba(0,0,0,0.1));">
-                    가지무침 체크리스트 도우미
-                </h1>
-                <div class="h-1.5 w-full bg-gradient-to-r from-transparent via-lime-400 to-transparent mt-1 opacity-60">
-                </div>
-            </div>
-            <p class="text-gray-500 mt-2 text-sm font-medium italic">🍑 쨔니가 섹시해지는 그날까지 🍑</p>
-        </div>
-
-        <!-- 입력 섹션 -->
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-lime-100 mb-6">
-            <div class="flex flex-wrap gap-2">
-                <select id="iconInput"
-                    class="border p-2 rounded-lg focus:outline-lime-500 bg-white cursor-pointer text-lg">
-                    <option value="❗" title="느낌표">❗</option>
-                    <option value="🏭" title="공장">🏭</option>
-                    <option value="💎" title="광석">💎</option>
-                    <option value="🌲" title="나무">🌲</option>
-                    <option value="🍳" title="요리">🍳</option>
-                    <option value="🔨" title="망치">🔨</option>
-                    <option value="🗡️" title="단검">🗡️</option>
-                </select>
-                <input id="taskInput" type="text" placeholder="할 일 입력"
-                    class="flex-1 min-w-[200px] border p-2 rounded-lg focus:outline-lime-500">
-                <input id="timeInput" type="number" placeholder="분"
-                    class="w-20 border p-2 rounded-lg focus:outline-lime-500">
-                <button onclick="addTask()"
-                    class="bg-lime-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-lime-600 transition shadow-sm">추가</button>
-            </div>
-        </div>
-
-        <!-- 그룹 섹션 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            <!-- Group 1: 반복 (기존 진행) -->
-            <div class="bg-lime-50 p-4 rounded-xl min-h-[300px] border border-lime-100">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="font-bold text-lg title-font text-lime-700 text-sm">🔁 반복 리스트</h2>
-                    <button onclick="startGroup('active')"
-                        class="text-xs bg-lime-600 text-white px-2 py-1 rounded hover:bg-lime-700">그룹 재시작</button>
-                </div>
-                <div id="activeList" class="space-y-3"></div>
-            </div>
-
-            <!-- Group 2: 대기 -->
-            <div class="bg-gray-100 p-4 rounded-xl min-h-[300px] border border-gray-200">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="font-bold text-lg title-font text-gray-700 text-sm">⏳ 대기 리스트</h2>
-                    <button onclick="startGroup('pending')"
-                        class="text-xs bg-lime-600 text-white px-2 py-1 rounded hover:bg-lime-700">그룹 재시작</button>
-                </div>
-                <div id="pendingList" class="space-y-3"></div>
-            </div>
-
-        </div>
+    <h2>ID 중복 확인 및 검사</h2>
+    
+    <div class="input-group">
+        <input type="text" id="idInput" placeholder="ID를 입력하세요 (쉼표 또는 공백으로 구분)">
+        <button class="btn-primary" onclick="checkDuplicates()">중복 확인하기</button>
     </div>
 
+    <h3>현재 대기 중인 ID</h3>
+    <div id="idContainer" class="id-container"></div>
+    <button id="giftBtn" class="btn-action" style="display: none;" onclick="completeGift()">선물 완료</button>
+
+    <div class="header-space" style="margin-top: 40px;">
+        <h3>저장된 선물 완료 세트</h3>
+        <button class="btn-danger" onclick="clearStorage()">전체 초기화</button>
+    </div>
+    <div id="setList" class="set-list"></div>
+
+    <div id="toast" class="toast">클립보드에 복사되었습니다!</div>
+
     <script>
-        // 알람 상태 관리
-        let isAlarmEnabled = JSON.parse(localStorage.getItem('isAlarmEnabled')) ?? true;
-        const alarmToggleBtn = document.getElementById('alarmToggle');
-        const alarmSound = document.getElementById('alarmSound');
+        // 누적되어 보관될 마스터 Set (기존에 선물 완료된 ID들을 기록)
+        let savedIdsMaster = new Set();
+        let currentGroup = []; // 현재 화면에 버튼으로 띄워진 ID 정보 저장 [{id: 'id1', isDup: true/false}, ...]
 
-        // 초기 아이콘 설정
-        alarmToggleBtn.innerText = isAlarmEnabled ? '🔊' : '🔇';
+        // 페이지 로드 시 로컬스토리지에서 기존 세트 데이터 불러오기
+        window.onload = function() {
+            loadSavedSets();
+        };
 
-        // 음량 상태 관리
-        let savedVolume = localStorage.getItem('alarmVolume');
-        let alarmVolume = savedVolume !== null ? Math.min(0.5, parseFloat(savedVolume)) : 0.5;
-        const volumeControl = document.getElementById('volumeControl');
+        // 중복 확인하기 버튼 누를 때
+        function checkDuplicates() {
+            const input = document.getElementById('idInput');
+            const text = input.value.trim();
+            if (!text) return;
 
-        alarmSound.volume = alarmVolume;
-        volumeControl.value = isAlarmEnabled ? alarmVolume : 0;
+            // 쉼표(,) 또는 공백으로 문자열 쪼개기 및 빈값 필터링
+            const rawIds = text.split(/[\s,]+/).filter(id => id.trim() !== "");
+            
+            const container = document.getElementById('idContainer');
 
-        // 알람 소리 파일 상태 관리
-        let savedAlarmFile = localStorage.getItem('alarmSoundFile') || 'alarm1.mp3';
-        const alarmSelect = document.getElementById('alarmSelect');
+            rawIds.forEach(id => {
+                // 이미 현재 대기 열에 존재하는 버튼이면 추가하지 않고 패스
+                if (currentGroup.some(item => item.id === id)) return;
 
-        alarmSound.src = savedAlarmFile;
-        alarmSelect.value = savedAlarmFile;
+                // 이미 '선물 완료' 마스터 셋에 존재한다면 중복(true), 아니면 신규(false)
+                const isDup = savedIdsMaster.has(id);
+                currentGroup.push({ id, isDup });
 
-        // 초기 기본 데이터 설정
-        const defaultTasks = [
-            { id: 1, title: "흑오팔 넉넉하게 캐기", duration: 0, remaining: 0, status: 'pending', isRunning: false, isExpired: false, icon: '💎' },
-            { id: 2, title: "농장 수확하기", duration: 60, remaining: 3600, status: 'active', isRunning: false, isExpired: false, icon: '🏭' },
-            { id: 3, title: "지폐 뽑아두기", duration: 40, remaining: 300, status: 'active', isRunning: false, isExpired: false, icon: '🏭' },
-            { id: 4, title: "채광팰 찾기", duration: 0, remaining: 0, status: 'pending', isRunning: false, isExpired: false, icon: '🗡️' },
-            { id: 5, title: "섹시해지기", duration: 0, remaining: 0, status: 'pending', isRunning: false, isExpired: false, icon: '❗' },
-            { id: 6, title: "요리 돌려두기", duration: 60, remaining: 3600, status: 'active', isRunning: false, isExpired: false, icon: '🍳' },
+                // 버튼 엘리먼트 생성
+                const btn = document.createElement('button');
+                btn.className = `id-btn ${isDup ? 'duplicate' : 'unique'}`;
+                btn.innerText = id;
+                // 클릭 시 클립보드 복사 이벤트
+                btn.onclick = () => copyToClipboard(id);
+                
+                container.appendChild(btn);
+            });
 
-        ];
-
-        let tasks = JSON.parse(localStorage.getItem('tasks'));
-
-        if (!tasks || tasks.length === 0) {
-            tasks = defaultTasks;
-            localStorage.setItem('tasks', JSON.stringify(tasks));
+            // 입력창 초기화 및 선물 완료 버튼 노출
+            input.value = "";
+            if (currentGroup.length > 0) {
+                document.getElementById('giftBtn').style.display = "block";
+            }
         }
 
-        function saveTasks() {
-            localStorage.setItem('tasks', JSON.stringify(tasks));
-            render();
+        // 클립보드 복사 함수
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const toast = document.getElementById('toast');
+                toast.innerText = `"${text}" 복사 완료!`;
+                toast.style.opacity = 1;
+                setTimeout(() => { toast.style.opacity = 0; }, 1500);
+            }).catch(err => {
+                console.error('복사 실패: ', err);
+            });
         }
 
-        // 할 일 입력 란에서 엔터키 누를 때 이벤트 처리
-        document.getElementById('taskInput').addEventListener('keydown', function (event) {
-            if (event.isComposing) return; // 한글 등 조합 문자 입력 시 이벤트 중복 발생 방지
-            if (event.key === 'Enter') {
-                event.preventDefault(); // 브라우저의 기본 동작(예: 폼 제출)으로 인해 addTask가 두 번 호출되는 것을 방지합니다.
-                addTask();
-            }
-        });
+        // 선물 완료 버튼 누를 때
+        function completeGift() {
+            if (currentGroup.length === 0) return;
 
-        // 시간 입력 란에서도 엔터를 누르면 할 일이 추가되도록 이벤트 처리
-        document.getElementById('timeInput').addEventListener('keydown', function (event) {
-            // isComposing 체크는 주로 텍스트 입력 필드에서 의미가 있지만, 일관성을 위해 추가합니다.
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                addTask();
-            }
-        });
-
-        function addTask() {
-            const title = document.getElementById('taskInput').value.trim();
-            const minutes = parseInt(document.getElementById('timeInput').value) || 0;
-            const icon = document.getElementById('iconInput').value;
-            if (!title) return;
-
-            const newTask = {
-                id: Date.now(),
-                title,
-                duration: minutes,
-                remaining: minutes * 60,
-                status: 'pending',
-                isRunning: false,
-                isExpired: false,
-                icon: icon
+            // 현재 그룹을 로컬스토리지용 객체 데이터로 구성 (날짜 및 구성원)
+            const newSet = {
+                date: new Date().toLocaleString(),
+                items: [...currentGroup]
             };
 
-            tasks.push(newTask);
-            document.getElementById('taskInput').value = '';
-            document.getElementById('timeInput').value = '';
-            document.getElementById('iconInput').value = '❗'; // 기본 아이콘으로 초기화
-            saveTasks();
-        }
-
-        function moveTask(id) {
-            const task = tasks.find(t => t.id === id);
-            task.status = task.status === 'pending' ? 'active' : 'pending';
-            saveTasks();
-        }
-
-        function deleteTask(id) {
-            tasks = tasks.filter(t => t.id !== id);
-            saveTasks();
-        }
-
-        function updateTaskIcon(id, newIcon) {
-            const task = tasks.find(t => t.id === id);
-            if (task) {
-                task.icon = newIcon;
-                saveTasks();
-            }
-        }
-
-        function updateTaskDuration(id, newDuration) {
-            const task = tasks.find(t => t.id === id);
-            if (task) {
-                const mins = Math.max(0, parseInt(newDuration) || 0); // 음수 방지
-                task.duration = mins;
-                task.remaining = mins * 60;
-                saveTasks();
-            }
-        }
-
-        function toggleTimer(id) {
-            const task = tasks.find(t => t.id === id);
-            if (task.isExpired) {
-                task.remaining = task.duration * 60;
-                task.isExpired = false;
-                task.isRunning = true;
-            } else {
-                if (task.isRunning) {
-                    // 동작 중 '정지'를 누르면 남은 시간을 초기 설정 시간으로 리셋
-                    task.isRunning = false;
-                    task.remaining = task.duration * 60;
-                } else {
-                    // 시작
-                    task.isRunning = true;
-                }
-            }
-            saveTasks();
-        }
-
-        function toggleAlarm() {
-            isAlarmEnabled = !isAlarmEnabled;
-            alarmToggleBtn.innerText = isAlarmEnabled ? '🔊' : '🔇';
-            localStorage.setItem('isAlarmEnabled', JSON.stringify(isAlarmEnabled));
-
-            // 음소거 상태에 따라 음량 바 UI 업데이트
-            if (isAlarmEnabled) {
-                volumeControl.value = alarmVolume;
-            } else {
-                volumeControl.value = 0;
-            }
-        }
-
-        function changeVolume(value) {
-            alarmVolume = parseFloat(value);
-            alarmSound.volume = alarmVolume;
-            localStorage.setItem('alarmVolume', alarmVolume);
-        }
-
-        function changeAlarm(filename) {
-            alarmSound.src = filename;
-            localStorage.setItem('alarmSoundFile', filename);
-        }
-
-        function startGroup(status) {
-            tasks.forEach(t => {
-                if (t.status === status) {
-                    t.isRunning = true;
-                    t.remaining = t.duration * 60;
-                    t.isExpired = false;
-                }
+            // 마스터 Set에 현재 아이디들 업데이트 처리 (다음 입력 시 중복 판정을 위해)
+            currentGroup.forEach(item => {
+                savedIdsMaster.add(item.id);
             });
-            saveTasks();
+
+            // 기존 로컬스토리지 데이터 가져와서 추가 저장
+            const savedSets = JSON.parse(localStorage.getItem('idSets')) || [];
+            savedSets.unshift(newSet); // 최신이 위로 오게 배열 앞에 추가
+            localStorage.setItem('idSets', JSON.stringify(savedSets));
+
+            // UI 초기화
+            document.getElementById('idContainer').innerHTML = "";
+            document.getElementById('giftBtn').style.display = "none";
+            currentGroup = [];
+
+            // 최하단 세트 리스트 다시 그리기
+            renderSets(savedSets);
         }
 
-        setInterval(() => {
-            let changed = false;
-            tasks.forEach(task => {
-                if (task.isRunning && task.remaining > 0) {
-                    task.remaining--;
-                    changed = true;
-                    if (task.remaining <= 0) {
-                        task.isRunning = false;
-                        task.isExpired = true;
-                        if (isAlarmEnabled) {
-                            alarmSound.play();
-                        }
-                    }
-                }
+        // 로컬스토리지 데이터 로드 및 렌더링
+        function loadSavedSets() {
+            const savedSets = JSON.parse(localStorage.getItem('idSets')) || [];
+            
+            // 마스터 Set 역산 (중복 검사용 풀 충전)
+            savedIdsMaster.clear();
+            savedSets.forEach(set => {
+                set.items.forEach(item => {
+                    savedIdsMaster.add(item.id);
+                });
             });
-            if (changed || tasks.some(t => t.isExpired)) render();
-        }, 1000);
 
-        function render() {
-            const pList = document.getElementById('pendingList');
-            const aList = document.getElementById('activeList');
-            pList.innerHTML = '';
-            aList.innerHTML = '';
+            renderSets(savedSets);
+        }
 
-            tasks.forEach(task => {
-                const m = Math.floor(task.remaining / 60);
-                const s = task.remaining % 60;
-                const timeStr = `${m}:${s < 10 ? '0' + s : s}`;
+        // 세트 리스트 화면 그리기
+        function renderSets(sets) {
+            const listContainer = document.getElementById('setList');
+            listContainer.innerHTML = "";
 
-                let timeHtml = '';
-                if (task.isExpired) {
-                    timeHtml = `<div class="text-sm mt-1 text-red-600 font-bold">⏱ 시간 종료!</div>`;
-                } else if (!task.isRunning) {
-                    timeHtml = `<div class="text-sm mt-1 text-gray-500 flex items-center">
-                        설정 시간: <input type="number" min="0" value="${task.duration}" onchange="updateTaskDuration(${task.id}, this.value)" class="w-16 border rounded px-1 py-0 mx-1 text-center focus:outline-lime-500 bg-gray-50 text-gray-800"> 분
-                    </div>`;
-                } else {
-                    timeHtml = `<div class="text-sm mt-1 text-gray-500">남은 시간: ${timeStr}</div>`;
-                }
+            if (sets.length === 0) {
+                listContainer.innerHTML = "<p style='color:#999; text-align:center;'>저장된 내역이 없습니다.</p>";
+                return;
+            }
 
-                // 생성된 카드에 사용할 아이콘 옵션 및 기존 데이터 호환성 처리
-                const iconValue = task.icon || '❗';
-                const icons = ['❗', '🏭', '💎', '🌲', '🍳', '🔨', '🔪', '⚔️', '🗡️'];
-                const iconOptions = icons.map(i => `<option value="${i}" ${iconValue === i ? 'selected' : ''}>${i}</option>`).join('');
+            sets.forEach(set => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'set-item';
 
-                const card = document.createElement('div');
-                card.className = `bg-white p-4 rounded-lg shadow-sm border-l-4 ${task.isExpired ? 'expired' : 'border-lime-500'} transition-all`;
+                const dateDiv = document.createElement('div');
+                dateDiv.className = 'set-date';
+                dateDiv.innerText = set.date;
 
-                card.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <div class="flex items-center gap-1 -ml-1">
-                                <select onchange="updateTaskIcon(${task.id}, this.value)" class="text-xl bg-transparent border-none focus:outline-none cursor-pointer rounded hover:bg-gray-100 p-0.5" title="아이콘 변경">
-                                    ${iconOptions}
-                                </select>
-                                <div class="font-bold text-gray-800">${task.title}</div>
-                            </div>
-                            ${timeHtml}
-                        </div>
-                        <div class="flex gap-1 ml-2">
-                            <button onclick="toggleTimer(${task.id})" class="text-[10px] px-2 py-1 bg-gray-50 border rounded hover:bg-gray-100">
-                                ${task.isRunning ? '정지' : (task.isExpired ? '재시작' : '시작')}
-                            </button>
-                            <button onclick="moveTask(${task.id})" class="text-[10px] px-2 py-1 bg-gray-50 border rounded hover:bg-gray-100">이동</button>
-                            <button onclick="deleteTask(${task.id})" class="text-[10px] px-2 py-1 text-red-400 hover:text-red-600">삭제</button>
-                        </div>
-                    </div>
-                `;
+                const elementsDiv = document.createElement('div');
+                elementsDiv.className = 'set-elements';
 
-                if (task.status === 'pending') pList.appendChild(card);
-                else aList.appendChild(card);
+                set.items.forEach(item => {
+                    const badge = document.createElement('span');
+                    badge.className = `set-badge ${item.isDup ? 'dup' : 'uni'}`;
+                    badge.innerText = item.id;
+                    elementsDiv.appendChild(badge);
+                });
+
+                itemDiv.appendChild(dateDiv);
+                itemDiv.appendChild(elementsDiv);
+                listContainer.appendChild(itemDiv);
             });
         }
 
-        render();
+        // 전체 초기화
+        function clearStorage() {
+            if (confirm("정말로 모든 세트 데이터를 삭제하고 진짜 초기화하겠습니까?")) {
+                localStorage.removeItem('idSets');
+                savedIdsMaster.clear();
+                currentGroup = [];
+                document.getElementById('idContainer').innerHTML = "";
+                document.getElementById('giftBtn').style.display = "none";
+                loadSavedSets();
+            }
+        }
     </script>
 </body>
-
 </html>
